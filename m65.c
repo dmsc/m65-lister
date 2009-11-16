@@ -1,3 +1,8 @@
+/* m65.c
+ * Decodes a tokenized MAC/65 file from stdin to stdout.
+ * (c) 2009 Daniel Serpell.
+ */
+
 #include <stdio.h>
 #include <stdlib.h>
 #include "tokens.h"

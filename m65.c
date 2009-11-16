@@ -47,7 +47,11 @@ int m65line(FILE *f)
  end = ld + ld[2];
  ld += 3;
 
- xp += printf("%d ", line);
+ if( line < 100 )
+  xp += printf("%02d ", line);
+ else
+  xp += printf("%04d ", line);
+
  while( ld < end )
  {
   int cmd = *ld;
@@ -72,6 +76,17 @@ int m65line(FILE *f)
    }
    // End line
    break;
+  }
+  else if( cmd == 7 )
+  {
+   while(xp<8)
+   {
+    putchar(' ');
+    xp++;
+   }
+   putchar(' ');
+   putchar(' ');
+   xp+=2;
   }
   else if( cmd >= 1 && cmd < 96 )
   {
@@ -101,6 +116,11 @@ int m65line(FILE *f)
     // literal value
     for(fn&=0x7f; ld<end && fn>0; ld++, fn--, xp++ )
      putchar(*ld);
+    if(ld[-1] == ' ')
+    {
+     putchar(' ');
+     xp++;
+    }
    }
    else if( fn == 5 )
    {

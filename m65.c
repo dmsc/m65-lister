@@ -44,6 +44,12 @@ static unsigned char *getm65line(FILE *f)
         return 0;
     }
     line    = malloc(l);
+    if( !line )
+    {
+        fprintf(stderr, "%s: memory error.\n", fname);
+        do_error = 1;
+        return 0;
+    }
     line[0] = c1;
     line[1] = c2;
     line[2] = l;
@@ -145,10 +151,11 @@ static int m65line(FILE *f)
     int in_quote = 0;
     int line;
     int xp = 0;
-    ld     = getm65line(f);
-    if( !ld )
+    unsigned char *data = getm65line(f);
+    if( !data )
         return 0;
 
+    ld   = data;
     line = ld[0] + ld[1] * 256;
     end  = ld + ld[2];
     ld += 3;
@@ -182,7 +189,7 @@ static int m65line(FILE *f)
             xp += m65_comment(ld, end);
             ld = end;
             // End line
-            break;
+            continue;
         }
 
         if( cmd == 1 ) // IF indent
@@ -209,8 +216,9 @@ static int m65line(FILE *f)
         if( cmd == 7 )
         {
             // Macro: special case and put before tab
-            for( int fn = 0x7F & *ld++; ld < end && fn > 0; ld++, fn--, xp++ )
-                putchar(*ld);
+            if( ld < end )
+                for( int fn = 0x7F & *ld++; ld < end && fn > 0; ld++, fn--, xp++ )
+                    putchar(*ld);
         }
 
         // Second TAB after statement
@@ -342,6 +350,7 @@ static int m65line(FILE *f)
         putchar(0x9B);
     else
         putchar('\n');
+    free(data);
     return xp;
 }
 

@@ -90,6 +90,12 @@ int m65line(FILE *f)
             break;
         }
 
+        if( cmd == 1 ) // IF indent
+        {
+            tab1 += 2;
+            tab2 += 2;
+        }
+
         // First TAB after label
         do
         {
@@ -215,6 +221,11 @@ int m65line(FILE *f)
             {
                 xp += printf(" {err:%d} ", fn);
             }
+        }
+        if( cmd == 3 ) // ENDIF remove indent
+        {
+            tab1 -= 2;
+            tab2 -= 2;
         }
     }
     if( at_eol )

@@ -8,9 +8,15 @@
 #include <stdlib.h>
 #include <unistd.h>
 
-static int at_eol = 0; // Use ATASCII EOL
-static int cv_rem = 0; // Convert comments to ASCII
-static int cv_str = 0; // Convert strings
+static int at_eol = 0;  // Use ATASCII EOL
+static int cv_rem = 0;  // Convert comments to ASCII
+static int cv_str = 0;  // Convert strings
+static int tab_p1 = 8;  // Column of first tab - before instruction
+static int tab_p2 = 12; // Column of second tab - before argument
+static int tab_p3 = 20; // Column of third tab - before comment
+
+// Current tab positions - modified by IF/ENDIF
+static int tab1, tab2;
 
 static unsigned char *getm65line(FILE *f)
 {
@@ -42,8 +48,6 @@ static unsigned char *getm65line(FILE *f)
     }
     return line;
 }
-
-static int tab1, tab2;
 
 static int m65_comment(unsigned char *ld, unsigned char *end)
 {
@@ -88,7 +92,7 @@ static int m65_conv_str(unsigned char *ld, unsigned char *end)
         {
             if( last )
                 clen += printf(",");
-            if( i - sub == 1 && ld[sub] != '\'' && ld[sub] != ' ')
+            if( i - sub == 1 && ld[sub] != '\'' && ld[sub] != ' ' )
                 clen += printf("'%c", ld[sub]);
             else
                 clen += printf("\"%.*s\"", i - sub, ld + sub);
@@ -110,6 +114,16 @@ static int m65_conv_str(unsigned char *ld, unsigned char *end)
         }
     }
     return clen;
+}
+
+static int put_tab(int xp, int tpos)
+{
+    do
+    {
+        putchar(' ');
+        xp++;
+    } while( xp <= tpos );
+    return xp;
 }
 
 static int m65line(FILE *f)
@@ -162,12 +176,7 @@ static int m65line(FILE *f)
         }
 
         // First TAB after label
-        do
-        {
-            putchar(' ');
-            xp++;
-        }
-        while( xp <= tab1 );
+        xp = put_tab(xp, tab1);
 
         // Print statement
         if( cmd >= 1 && cmd < 96 )
@@ -187,12 +196,7 @@ static int m65line(FILE *f)
         }
 
         // Second TAB after statement
-        do
-        {
-            putchar(' ');
-            xp++;
-        }
-        while( xp <= tab2 );
+        xp = put_tab(xp, tab2);
 
         // Get arguments
         while( ld < end )
@@ -270,12 +274,7 @@ static int m65line(FILE *f)
             }
             else if( fn == 59 )
             {
-                do
-                {
-                    putchar(' ');
-                    xp++;
-                }
-                while( xp <= 20 );
+                xp = put_tab(xp, tab_p3);
 
                 // Print until end of line
                 xp += m65_comment(ld, end);
@@ -343,16 +342,17 @@ static void printfile(FILE *f)
         printf("Short file!\n");
         return;
     }
-    tab1 = 8;
-    tab2 = 12;
+    tab1 = tab_p1;
+    tab2 = tab_p2;
     while( m65line(f) )
         ;
 }
 
 int main(int argc, char **argv)
 {
+    int tabn = 0;
     int opt;
-    while( (opt = getopt(argc, argv, "hacs")) != -1 )
+    while( (opt = getopt(argc, argv, "hacst:")) != -1 )
     {
         switch( opt )
         {
@@ -365,14 +365,55 @@ int main(int argc, char **argv)
         case 's':
             cv_str = 1;
             break;
+        case 't':
+        {
+            const char *p = optarg;
+            while( *p )
+            {
+                if( tabn > 2 )
+                {
+                    fprintf(stderr, "%s: more than 3 tab positions given: '%s'\n",
+                            argv[0], p);
+                    exit(EXIT_FAILURE);
+                }
+                const char *e = p;
+                int t         = strtol(p, (char **)&e, 0);
+                if( e == p || (*e != 0 && *e != ':') )
+                {
+                    fprintf(stderr, "%s: invalid argument to tab position: '%s'\n",
+                            argv[0], e);
+                    exit(EXIT_FAILURE);
+                }
+                else if( t < 0 || t > 256 )
+                {
+                    fprintf(stderr, "%s: tab position must be from 0 to 256, not '%d'\n",
+                            argv[0], t);
+                    exit(EXIT_FAILURE);
+                }
+                if( tabn == 0 )
+                    tab_p1 = t;
+                else if( tabn == 1 )
+                    tab_p2 = t;
+                else if( tabn == 2 )
+                    tab_p3 = t;
+
+                tabn++;
+                if( *e )
+                    e++;
+                p = e;
+            }
+            break;
+        }
         case 'h':
             fprintf(stderr,
                     "Usage: %s [options] [file] [... file]\n"
                     "Options:\n"
-                    "\t-a  Use ATASCII line endings.\n"
-                    "\t-c  Convert comments to ASCII.\n"
-                    "\t-s  Convert strings with non-printable chars to hex.\n"
-                    "\t-h  Show this help.\n",
+                    "\t-a        Use ATASCII line endings.\n"
+                    "\t-c        Convert comments to ASCII.\n"
+                    "\t-s        Convert strings with non-printable chars to hex.\n"
+                    "\t-t num    Sets next TAB position to 'num'\n"
+                    "\t-t a:b:c  Sets TAB positions 'a', 'b' and 'c'\n"
+                    "\t-h        Show this help.\n",
                     argv[0]);
             exit(EXIT_SUCCESS);
         default:

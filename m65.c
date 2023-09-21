@@ -8,6 +8,8 @@
 #include <stdlib.h>
 #include <unistd.h>
 
+int at_eol = 0; // Use ATASCII EOL
+
 unsigned char *getm65line(FILE *f)
 {
     int c1, c2, l, i;
@@ -211,7 +213,10 @@ int m65line(FILE *f)
             }
         }
     }
-    putchar('\n');
+    if( at_eol )
+        putchar(0x9B);
+    else
+        putchar('\n');
     return xp;
 }
 
@@ -239,10 +244,13 @@ void printfile(FILE *f)
 int main(int argc, char **argv)
 {
     int opt;
-    while( (opt = getopt(argc, argv, "h")) != -1 )
+    while( (opt = getopt(argc, argv, "ha")) != -1 )
     {
         switch( opt )
         {
+        case 'a':
+            at_eol = 1;
+            break;
         case 'h':
             fprintf(stderr,
                     "Usage: %s [options] [file] [... file]\n"

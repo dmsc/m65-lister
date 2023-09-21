@@ -11,6 +11,7 @@
 static int at_eol = 0;  // Use ATASCII EOL
 static int cv_rem = 0;  // Convert comments to ASCII
 static int cv_str = 0;  // Convert strings
+static int do_num = 1;  // Show line numbers
 static int tab_p1 = 8;  // Column of first tab - before instruction
 static int tab_p2 = 12; // Column of second tab - before argument
 static int tab_p3 = 20; // Column of third tab - before comment
@@ -140,12 +141,15 @@ static int m65line(FILE *f)
     end  = ld + ld[2];
     ld += 3;
 
-    if( line < 100 )
-        xp += printf("%02d ", line);
-    else if( line < 10000 )
-        xp += printf("%04d ", line);
-    else
-        xp += printf("%06d ", line);
+    if( do_num )
+    {
+        if( line < 100 )
+            xp += printf("%02d ", line);
+        else if( line < 10000 )
+            xp += printf("%04d ", line);
+        else
+            xp += printf("%06d ", line);
+    }
 
     while( ld < end )
     {
@@ -352,10 +356,13 @@ int main(int argc, char **argv)
 {
     int tabn = 0;
     int opt;
-    while( (opt = getopt(argc, argv, "hacst:")) != -1 )
+    while( (opt = getopt(argc, argv, "hacsnt:")) != -1 )
     {
         switch( opt )
         {
+        case 'n':
+            do_num = 0;
+            break;
         case 'a':
             at_eol = 1;
             break;
@@ -411,6 +418,7 @@ int main(int argc, char **argv)
                     "\t-a        Use ATASCII line endings.\n"
                     "\t-c        Convert comments to ASCII.\n"
                     "\t-s        Convert strings with non-printable chars to hex.\n"
+                    "\t-n        Don't print the line numbers.\n"
                     "\t-t num    Sets next TAB position to 'num'\n"
                     "\t-t a:b:c  Sets TAB positions 'a', 'b' and 'c'\n"
                     "\t-h        Show this help.\n",

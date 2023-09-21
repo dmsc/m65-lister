@@ -8,11 +8,11 @@
 #include <stdlib.h>
 #include <unistd.h>
 
-int at_eol = 0; // Use ATASCII EOL
-int cv_rem = 0; // Convert comments to ASCII
-int cv_str = 0; // Convert strings
+static int at_eol = 0; // Use ATASCII EOL
+static int cv_rem = 0; // Convert comments to ASCII
+static int cv_str = 0; // Convert strings
 
-unsigned char *getm65line(FILE *f)
+static unsigned char *getm65line(FILE *f)
 {
     int c1, c2, l, i;
     unsigned char *line;
@@ -43,9 +43,9 @@ unsigned char *getm65line(FILE *f)
     return line;
 }
 
-int tab1, tab2;
+static int tab1, tab2;
 
-int m65_comment(unsigned char *ld, unsigned char *end)
+static int m65_comment(unsigned char *ld, unsigned char *end)
 {
     // Comment, print until end of line
     int len = (end - ld);
@@ -63,7 +63,7 @@ int m65_comment(unsigned char *ld, unsigned char *end)
     return len;
 }
 
-int m65_conv_str(unsigned char *ld, unsigned char *end)
+static int m65_conv_str(unsigned char *ld, unsigned char *end)
 {
     int clen = 0;
     int i    = 1;
@@ -112,7 +112,7 @@ int m65_conv_str(unsigned char *ld, unsigned char *end)
     return clen;
 }
 
-int m65line(FILE *f)
+static int m65line(FILE *f)
 {
     unsigned char *ld, *end;
     int in_quote = 0;
@@ -326,7 +326,7 @@ int m65line(FILE *f)
     return xp;
 }
 
-void printfile(FILE *f)
+static void printfile(FILE *f)
 {
     int c1, c2;
     c1 = getc(f);

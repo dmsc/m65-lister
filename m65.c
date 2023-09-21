@@ -41,6 +41,8 @@ unsigned char *getm65line(FILE *f)
     return line;
 }
 
+int tab1, tab2;
+
 int m65line(FILE *f)
 {
     unsigned char *ld, *end;
@@ -87,35 +89,40 @@ int m65line(FILE *f)
             // End line
             break;
         }
-        else if( cmd == 7 )
+
+        // First TAB after label
+        do
         {
-            while( xp < 8 )
-            {
-                putchar(' ');
-                xp++;
-            }
             putchar(' ');
-            putchar(' ');
-            xp += 2;
+            xp++;
         }
-        else if( cmd >= 1 && cmd < 96 )
+        while( xp <= tab1 );
+
+        // Print statement
+        if( cmd >= 1 && cmd < 96 )
         {
-            while( xp < 8 )
-            {
-                putchar(' ');
-                xp++;
-            }
-            xp += printf(" %s ", toks[cmd]);
-            while( xp < 13 )
-            {
-                putchar(' ');
-                xp++;
-            }
+            xp += printf("%s", toks[cmd]);
         }
         else
         {
             xp += printf(" {ERR:%d} ", cmd);
         }
+
+        if( cmd == 7 )
+        {
+            // Macro: special case and put before tab
+            for( int fn = 0x7F & *ld++; ld < end && fn > 0; ld++, fn--, xp++ )
+                putchar(*ld);
+        }
+
+        // Second TAB after statement
+        do
+        {
+            putchar(' ');
+            xp++;
+        }
+        while( xp <= tab2 );
+
         // Get arguments
         while( ld < end )
         {
@@ -126,11 +133,6 @@ int m65line(FILE *f)
                 // literal value
                 for( fn &= 0x7f; ld < end && fn > 0; ld++, fn--, xp++ )
                     putchar(*ld);
-                if( ld[-1] == ' ' )
-                {
-                    putchar(' ');
-                    xp++;
-                }
             }
             else if( fn == 5 )
             {
@@ -239,6 +241,8 @@ void printfile(FILE *f)
         printf("Short file!\n");
         return;
     }
+    tab1 = 8;
+    tab2 = 12;
     while( m65line(f) )
         ;
 }

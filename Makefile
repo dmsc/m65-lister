@@ -5,8 +5,15 @@ all: m65
 
 
 m65: m65.o
-        
-m65.o: m65.c tokens.h
+	$(CC) $(CFLAGS) -o $@ $^
 
-tokens.h: gettab mac65.bin
+.PHONY: clean
+clean:
+	rm -f m65.o gettab.o
+
+tokens.h: gettab | mac65.bin
 	./gettab < mac65.bin > tokens.h
+
+mac65.bin:
+
+m65.o: m65.c tokens.h

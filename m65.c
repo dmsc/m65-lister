@@ -56,8 +56,10 @@ int m65line(FILE *f)
 
     if( line < 100 )
         xp += printf("%02d ", line);
-    else
+    else if( line < 10000 )
         xp += printf("%04d ", line);
+    else
+        xp += printf("%06d ", line);
 
     while( ld < end )
     {

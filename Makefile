@@ -1,19 +1,28 @@
 CC=gcc
 CFLAGS=-O2 -Wall
 
-all: m65
+# Build folder
+BUILD=build
 
-
-m65: m65.o
-	$(CC) $(CFLAGS) -o $@ $^
+all: $(BUILD)/m65
 
 .PHONY: clean
 clean:
-	rm -f m65.o gettab.o
+	rm -f $(BUILD)/m65 $(BUILD)/gettab
+	-rmdir $(BUILD)
 
-tokens.h: gettab | mac65.bin
-	./gettab < mac65.bin > tokens.h
+src/tokens.h: $(BUILD)/gettab mac65.bin | $(BUILD)
+	$< < mac65.bin > $@ || (rm -f $@ && false)
 
+# Used to generate tokens.h
 mac65.bin:
 
-m65.o: m65.c tokens.h
+# Dependencies
+$(BUILD)/gettab: src/gettab.c | $(BUILD)
+	$(CC) $(CFLAGS) -o $@ $^
+
+$(BUILD)/m65: src/m65.c src/tokens.h | $(BUILD)
+	$(CC) $(CFLAGS) -o $@ $^
+
+$(BUILD):
+	mkdir -p $(BUILD)

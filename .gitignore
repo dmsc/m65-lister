@@ -1,3 +1,1 @@
-gettab
-m65
-*.o
+build/

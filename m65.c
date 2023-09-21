@@ -91,7 +91,7 @@ int m65_conv_str(unsigned char *ld, unsigned char *end)
             if( i - sub == 1 && ld[sub] != '\'' && ld[sub] != ' ')
                 clen += printf("'%c", ld[sub]);
             else
-                clen =+ printf("\"%.*s\"", i - sub, ld + sub);
+                clen += printf("\"%.*s\"", i - sub, ld + sub);
             last = 1;
         }
         // Now, extract non-printable characters
@@ -102,9 +102,9 @@ int m65_conv_str(unsigned char *ld, unsigned char *end)
             if( ld[i] == '"' )
                 clen += printf("'%c", ld[i]);
             else if( ld[i] & 0x80 )
-                clen =+ printf("$%02X", ld[i]);
+                clen += printf("$%02X", ld[i]);
             else
-                clen =+ printf("%d", ld[i]);
+                clen += printf("%d", ld[i]);
             last = 1;
             i++;
         }

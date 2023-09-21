@@ -9,6 +9,7 @@
 #include <unistd.h>
 
 int at_eol = 0; // Use ATASCII EOL
+int cv_rem = 0; // Convert comments to ASCII
 
 unsigned char *getm65line(FILE *f)
 {
@@ -42,6 +43,24 @@ unsigned char *getm65line(FILE *f)
 }
 
 int tab1, tab2;
+
+int m65_comment(unsigned char *ld, unsigned char *end)
+{
+    // Comment, print until end of line
+    int len = (end - ld);
+    while( ld < end )
+    {
+        int c = (*ld++) & 0xFF;
+        if( cv_rem )
+        {
+            c &= 0x7F;
+            if( c < ' ' || c == 0x7F )
+                c = '.';
+        }
+        putchar(c);
+    }
+    return len;
+}
 
 int m65line(FILE *f)
 {
@@ -79,13 +98,8 @@ int m65line(FILE *f)
         }
         else if( cmd == 88 || cmd == 0 )
         {
-            // Comment, print until end of line
-            while( ld < end )
-            {
-                putchar(*ld);
-                ld++;
-                xp++;
-            }
+            xp += m65_comment(ld, end);
+            ld = end;
             // End line
             break;
         }
@@ -202,16 +216,16 @@ int m65line(FILE *f)
             }
             else if( fn == 59 )
             {
-                while( xp < 20 )
+                do
                 {
                     putchar(' ');
                     xp++;
                 }
+                while( xp <= 20 );
+
                 // Print until end of line
-                putchar(' ');
-                xp += 1 + (end - ld);
-                while( ld < end )
-                    putchar(*ld++);
+                xp += m65_comment(ld, end);
+                ld = end;
             }
             else if( fn > 10 && fn < 78 )
             {
@@ -261,17 +275,22 @@ void printfile(FILE *f)
 int main(int argc, char **argv)
 {
     int opt;
-    while( (opt = getopt(argc, argv, "ha")) != -1 )
+    while( (opt = getopt(argc, argv, "hac")) != -1 )
     {
         switch( opt )
         {
         case 'a':
             at_eol = 1;
             break;
+        case 'c':
+            cv_rem = 1;
+            break;
         case 'h':
             fprintf(stderr,
                     "Usage: %s [options] [file] [... file]\n"
                     "Options:\n"
+                    "\t-a  Use ATASCII line endings.\n"
+                    "\t-c  Convert comments to ASCII.\n"
                     "\t-h  Show this help.\n",
                     argv[0]);
             exit(EXIT_SUCCESS);

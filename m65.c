@@ -6,6 +6,7 @@
 #include "tokens.h"
 #include <stdio.h>
 #include <stdlib.h>
+#include <unistd.h>
 
 unsigned char *getm65line(FILE *f)
 {
@@ -235,9 +236,43 @@ void printfile(FILE *f)
         ;
 }
 
-int main()
+int main(int argc, char **argv)
 {
-    printfile(stdin);
+    int opt;
+    while( (opt = getopt(argc, argv, "h")) != -1 )
+    {
+        switch( opt )
+        {
+        case 'h':
+            fprintf(stderr,
+                    "Usage: %s [options] [file] [... file]\n"
+                    "Options:\n"
+                    "\t-h  Show this help.\n",
+                    argv[0]);
+            exit(EXIT_SUCCESS);
+        default:
+            fprintf(stderr, "%s: try '-h' for help.\n", argv[0]);
+            exit(EXIT_FAILURE);
+        }
+    }
+
+    if( optind >= argc )
+        printfile(stdin);
+    else
+    {
+        while( optind < argc )
+        {
+            FILE *infile = fopen(argv[optind], "rb");
+            if( !infile )
+            {
+                fprintf(stderr, "%s: can't open file\n", argv[optind]);
+                exit(EXIT_FAILURE);
+            }
+            printfile(infile);
+            fclose(infile);
+            optind++;
+        }
+    }
 
     return 0;
 }

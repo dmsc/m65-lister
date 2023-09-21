@@ -1,6 +1,0 @@
-syntax: glob
-*.o
-*~
-tests/
-m65
-gettab

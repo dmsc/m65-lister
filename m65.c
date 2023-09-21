@@ -18,6 +18,10 @@ static int tab_p3 = 20; // Column of third tab - before comment
 
 // Current tab positions - modified by IF/ENDIF
 static int tab1, tab2;
+// Current file name
+static const char *fname;
+// If any file gave an error
+static int do_error = 0;
 
 static unsigned char *getm65line(FILE *f)
 {
@@ -27,12 +31,18 @@ static unsigned char *getm65line(FILE *f)
         return 0;
     if( (c1 = getc(f)) == EOF )
         return 0;
-    if( (c2 = getc(f)) == EOF )
+    if( (c2 = getc(f)) == EOF || (l = getc(f)) == EOF )
+    {
+        fprintf(stderr, "%s: truncated file.\n", fname);
+        do_error = 1;
         return 0;
-    if( (l = getc(f)) == EOF )
-        return 0;
+    }
     if( l < 3 )
+    {
+        fprintf(stderr, "%s: line too short.\n", fname);
+        do_error = 1;
         return 0;
+    }
     line    = malloc(l);
     line[0] = c1;
     line[1] = c2;
@@ -42,6 +52,8 @@ static unsigned char *getm65line(FILE *f)
         int c = getc(f);
         if( c == EOF )
         {
+            fprintf(stderr, "%s: truncated line %d.\n", fname, c1 + c2 * 256);
+            do_error = 1;
             free(line);
             return 0;
         }
@@ -190,6 +202,8 @@ static int m65line(FILE *f)
         else
         {
             xp += printf(" {ERR:%d} ", cmd);
+            fprintf(stderr, "%s: unknown token at line %d\n", fname, line);
+            do_error = 1;
         }
 
         if( cmd == 7 )
@@ -314,6 +328,8 @@ static int m65line(FILE *f)
             else
             {
                 xp += printf(" {err:%d} ", fn);
+                fprintf(stderr, "%s: unknown token at line %d\n", fname, line);
+                do_error = 1;
             }
         }
         if( cmd == 3 ) // ENDIF remove indent
@@ -336,14 +352,16 @@ static void printfile(FILE *f)
     c2 = getc(f);
     if( c1 != 254 || c2 != 254 )
     {
-        printf("Not MAC/65 file\n");
+        fprintf(stderr, "%s: not a MAC/65 file\n", fname);
+        do_error = 1;
         return;
     }
     c1 = getc(f);
     c2 = getc(f);
     if( c1 == EOF || c2 == EOF )
     {
-        printf("Short file!\n");
+        fprintf(stderr, "%s: file too short\n", fname);
+        do_error = 1;
         return;
     }
     tab1 = tab_p1;
@@ -431,22 +449,28 @@ int main(int argc, char **argv)
     }
 
     if( optind >= argc )
+    {
+        fname = "(stdin)";
         printfile(stdin);
+    }
     else
     {
         while( optind < argc )
         {
-            FILE *infile = fopen(argv[optind], "rb");
+            fname        = argv[optind++];
+            FILE *infile = fopen(fname, "rb");
             if( !infile )
             {
-                fprintf(stderr, "%s: can't open file\n", argv[optind]);
-                exit(EXIT_FAILURE);
+                fprintf(stderr, "%s: can't open file\n", fname);
+                do_error = 1;
+                continue;
             }
             printfile(infile);
             fclose(infile);
-            optind++;
         }
     }
 
+    if( do_error )
+        return EXIT_FAILURE;
     return 0;
 }

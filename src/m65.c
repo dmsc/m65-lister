@@ -12,6 +12,7 @@ static int at_eol = 0;  // Use ATASCII EOL
 static int cv_rem = 0;  // Convert comments to ASCII
 static int cv_str = 0;  // Convert strings
 static int do_num = 1;  // Show line numbers
+static int l_case = 0;  // Output lower-case text
 static int tab_p1 = 8;  // Column of first tab - before instruction
 static int tab_p2 = 12; // Column of second tab - before argument
 static int tab_p3 = 20; // Column of third tab - before comment
@@ -145,6 +146,35 @@ static int put_tab(int xp, int tpos)
     return xp;
 }
 
+static void put_case_chr(char c, int l_case)
+{
+    if( l_case && c >= 'A' && c <= 'Z' )
+        putchar(c - 'A' + 'a');
+    else
+        putchar(c);
+}
+
+static int put_str(const char *str, int l_case)
+{
+    const char *p;
+    for(p = str; *p; p++)
+        put_case_chr(*p, l_case);
+    return p - str;
+}
+
+static int put_ident(int fn, unsigned char *ld, unsigned char *end, int l_case)
+{
+    int len = fn & 0x7F;
+
+    if( ld + len > end )
+        return end - ld;
+
+    for( int i = 0; i < len; i++ )
+        put_case_chr(ld[i], l_case);
+
+    return len;
+}
+
 static int m65line(FILE *f)
 {
     unsigned char *ld, *end;
@@ -179,8 +209,9 @@ static int m65line(FILE *f)
         if( cmd & 0x80 )
         {
             // get label
-            for( cmd &= 0x7f; ld < end && cmd > 0; ld++, cmd--, xp++ )
-                putchar(*ld);
+            int l = put_ident( cmd, ld, end, l_case );
+            xp += l;
+            ld += l;
             // Get new command
             continue;
         }
@@ -204,7 +235,7 @@ static int m65line(FILE *f)
         // Print statement
         if( cmd >= 1 && cmd < 96 )
         {
-            xp += printf("%s", toks[cmd]);
+            xp += put_str(toks[cmd], l_case);
         }
         else
         {
@@ -213,12 +244,12 @@ static int m65line(FILE *f)
             do_error = 1;
         }
 
-        if( cmd == 7 )
+        if( cmd == 7 && ld < end )
         {
             // Macro: special case and put before tab
-            if( ld < end )
-                for( int fn = 0x7F & *ld++; ld < end && fn > 0; ld++, fn--, xp++ )
-                    putchar(*ld);
+            int l = put_ident( ld[0], ld + 1, end, l_case );
+            xp += l;
+            ld += l + 1;
         }
 
         // Second TAB after statement
@@ -232,8 +263,9 @@ static int m65line(FILE *f)
             if( fn & 0x80 )
             {
                 // literal value
-                for( fn &= 0x7f; ld < end && fn > 0; ld++, fn--, xp++ )
-                    putchar(*ld);
+                int l = put_ident( fn, ld, end, l_case );
+                xp += l;
+                ld += l;
             }
             else if( fn == 5 )
             {
@@ -248,7 +280,7 @@ static int m65line(FILE *f)
                     k += 256 * (*ld);
                     ld++;
                 }
-                xp += printf("$%04X", k);
+                xp += printf(l_case ? "$%04x" : "$%04X", k);
             }
             else if( fn == 6 )
             {
@@ -258,7 +290,7 @@ static int m65line(FILE *f)
                     k = *ld;
                     ld++;
                 }
-                xp += printf("$%02X", k);
+                xp += printf(l_case ? "$%02x" : "$%02X", k);
             }
             else if( fn == 7 )
             {
@@ -294,7 +326,7 @@ static int m65line(FILE *f)
                     ld++;
                 }
                 if( cv_str && (k <= ' ' || k == '\'' || k >= 0x7F) )
-                    xp += printf("$%02X", k);
+                    xp += printf(l_case ? "$%02x" : "$%02X", k);
                 else
                     xp += printf("'%c", k);
             }
@@ -331,7 +363,7 @@ static int m65line(FILE *f)
             }
             else if( fn > 10 && fn < 78 )
             {
-                xp += printf("%s", funcs[fn - 10]);
+                xp += put_str(funcs[fn - 10], l_case);
             }
             else
             {
@@ -383,7 +415,7 @@ int main(int argc, char **argv)
 {
     int tabn = 0;
     int opt;
-    while( (opt = getopt(argc, argv, "hacsnt:")) != -1 )
+    while( (opt = getopt(argc, argv, "hacsnlt:")) != -1 )
     {
         switch( opt )
         {
@@ -398,6 +430,9 @@ int main(int argc, char **argv)
             break;
         case 's':
             cv_str = 1;
+            break;
+        case 'l':
+            l_case = 1;
             break;
         case 't':
         {
@@ -446,6 +481,7 @@ int main(int argc, char **argv)
                     "\t-c        Convert comments to ASCII.\n"
                     "\t-s        Convert strings with non-printable chars to hex.\n"
                     "\t-n        Don't print the line numbers.\n"
+                    "\t-l        Output lower-case instructions and labels.\n"
                     "\t-t num    Sets next TAB position to 'num'\n"
                     "\t-t a:b:c  Sets TAB positions 'a', 'b' and 'c'\n"
                     "\t-h        Show this help.\n",

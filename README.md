@@ -21,6 +21,15 @@ Options:
  - `-c`          Convert comments from ATASCII to ASCII, converting
                  inverse-video characters and removing control characters.
 
+ - `-C`          Force a semicolon before comments at the end of instructions.
+                 MAC/65 allows comments at end of instructions without any
+                 symbol, use this to convert the for more strict assemblers.
+
+ - `-l`          Outputs instruction mnemonics, labels and hexadecimal numbers
+                 in lower case.  Note that MAC/65 internally stores all labels
+                 in upper-case on input, but you can generate files with mixed
+                 case.
+
  - `-s`          Convert strings with non-printable chars to hexadecimal, resulting
                  in an assembly listing with only printable characters giving
                  the same output.

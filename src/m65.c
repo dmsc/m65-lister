@@ -271,7 +271,7 @@ static int m65line(FILE *f)
             if( fn & 0x80 )
             {
                 // literal value
-                int l = put_ident( fn, ld, end, l_case );
+                int l = put_ident( fn, ld, end, l_case && !in_quote );
                 xp += l;
                 ld += l;
             }
@@ -365,7 +365,7 @@ static int m65line(FILE *f)
                 }
                 else
                 {
-                    in_quote = 0;
+                    in_quote = !in_quote;
                     xp += printf("\"");
                 }
             }

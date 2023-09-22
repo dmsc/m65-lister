@@ -9,6 +9,7 @@
 #include <unistd.h>
 
 static int at_eol = 0;  // Use ATASCII EOL
+static int cv_cmt = 0;  // Add ';' before comments
 static int cv_rem = 0;  // Convert comments to ASCII
 static int cv_str = 0;  // Convert strings
 static int do_num = 1;  // Show line numbers
@@ -69,7 +70,7 @@ static unsigned char *getm65line(FILE *f)
     return line;
 }
 
-static int m65_comment(unsigned char *ld, unsigned char *end)
+static int m65_comment(unsigned char *ld, unsigned char *end, int first)
 {
     // Comment, print until end of line
     int len = (end - ld);
@@ -82,6 +83,13 @@ static int m65_comment(unsigned char *ld, unsigned char *end)
             if( c < ' ' || c == 0x7F )
                 c = '.';
         }
+        if( first && ';' != c )
+        {
+            putchar(';');
+            putchar(' ');
+            len += 2;
+        }
+        first = 0;
         putchar(c);
     }
     return len;
@@ -217,7 +225,7 @@ static int m65line(FILE *f)
         }
         else if( cmd == 88 || cmd == 0 )
         {
-            xp += m65_comment(ld, end);
+            xp += m65_comment(ld, end, 0);
             ld = end;
             // End line
             continue;
@@ -335,7 +343,7 @@ static int m65line(FILE *f)
                 xp = put_tab(xp, tab_p3);
 
                 // Print until end of line
-                xp += m65_comment(ld, end);
+                xp += m65_comment(ld, end, cv_cmt);
                 ld = end;
             }
             else if( fn == 65 )
@@ -415,7 +423,7 @@ int main(int argc, char **argv)
 {
     int tabn = 0;
     int opt;
-    while( (opt = getopt(argc, argv, "hacsnlt:")) != -1 )
+    while( (opt = getopt(argc, argv, "hacsnlCt:")) != -1 )
     {
         switch( opt )
         {
@@ -433,6 +441,9 @@ int main(int argc, char **argv)
             break;
         case 'l':
             l_case = 1;
+            break;
+        case 'C':
+            cv_cmt = 1;
             break;
         case 't':
         {
@@ -482,6 +493,7 @@ int main(int argc, char **argv)
                     "\t-s        Convert strings with non-printable chars to hex.\n"
                     "\t-n        Don't print the line numbers.\n"
                     "\t-l        Output lower-case instructions and labels.\n"
+                    "\t-C        Add ';' before comments at end of lines.\n"
                     "\t-t num    Sets next TAB position to 'num'\n"
                     "\t-t a:b:c  Sets TAB positions 'a', 'b' and 'c'\n"
                     "\t-h        Show this help.\n",

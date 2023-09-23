@@ -45,7 +45,7 @@ static unsigned char *getm65line(FILE *f)
         do_error = 1;
         return 0;
     }
-    line    = malloc(l);
+    line = malloc(l);
     if( !line )
     {
         fprintf(stderr, "%s: memory error.\n", fname);
@@ -165,7 +165,7 @@ static void put_case_chr(char c, int l_case)
 static int put_str(const char *str, int l_case)
 {
     const char *p;
-    for(p = str; *p; p++)
+    for( p = str; *p; p++ )
         put_case_chr(*p, l_case);
     return p - str;
 }
@@ -186,9 +186,9 @@ static int put_ident(int fn, unsigned char *ld, unsigned char *end, int l_case)
 static int m65line(FILE *f)
 {
     unsigned char *ld, *end;
-    int in_quote = 0;
     int line;
-    int xp = 0;
+    int in_quote        = 0;
+    int xp              = 0;
     unsigned char *data = getm65line(f);
     if( !data )
         return 0;
@@ -217,7 +217,7 @@ static int m65line(FILE *f)
         if( cmd & 0x80 )
         {
             // get label
-            int l = put_ident( cmd, ld, end, l_case );
+            int l = put_ident(cmd, ld, end, l_case);
             xp += l;
             ld += l;
             // Get new command
@@ -255,7 +255,7 @@ static int m65line(FILE *f)
         if( cmd == 7 && ld < end )
         {
             // Macro: special case and put before tab
-            int l = put_ident( ld[0], ld + 1, end, l_case );
+            int l = put_ident(ld[0], ld + 1, end, l_case);
             xp += l;
             ld += l + 1;
         }
@@ -271,7 +271,7 @@ static int m65line(FILE *f)
             if( fn & 0x80 )
             {
                 // literal value
-                int l = put_ident( fn, ld, end, l_case && !in_quote );
+                int l = put_ident(fn, ld, end, l_case && !in_quote);
                 xp += l;
                 ld += l;
             }
